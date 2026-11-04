@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kerja-menang-v1';
+const CACHE_NAME = 'kerja-menang-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
