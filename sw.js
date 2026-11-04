@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kerja-menang-v3';
+const CACHE_NAME = 'kerja-menang-v4';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -14,8 +14,9 @@ self.addEventListener('install', (event) => {
       cache.addAll(CORE_ASSETS.map((url) => new Request(url, { cache: 'reload' })))
     )
   );
-  // Note: We do NOT call self.skipWaiting() unconditionally so that active draws are never interrupted.
-  // Instead, the client controls when to activate the update via postMessage('SKIP_WAITING').
+  // Take over straight away. This never reloads an open page, so a draw in progress is not interrupted;
+  // the new version is used the next time the page is opened or refreshed.
+  self.skipWaiting();
 });
 
 self.addEventListener('message', (event) => {
