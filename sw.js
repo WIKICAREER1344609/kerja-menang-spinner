@@ -1,16 +1,18 @@
-const CACHE_NAME = 'kerja-menang-v2';
+const CACHE_NAME = 'kerja-menang-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './favicon.svg',
+  './wikicareer-logo.png',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CORE_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) =>
+      // cache: 'reload' skips the browser's own short-term cache, so a new version never stores an old page.
+      cache.addAll(CORE_ASSETS.map((url) => new Request(url, { cache: 'reload' })))
+    )
   );
   // Note: We do NOT call self.skipWaiting() unconditionally so that active draws are never interrupted.
   // Instead, the client controls when to activate the update via postMessage('SKIP_WAITING').
@@ -34,23 +36,36 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function saveCopy(request, response) {
+  if (response && response.status === 200) {
+    const copy = response.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+  }
+  return response;
+}
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
+  // The page itself: always try the latest version first; use the saved copy only when offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request.url, { cache: 'no-cache' })
+        .then((response) => saveCopy(event.request, response))
+        .catch(() =>
+          caches.match(event.request).then((cached) => cached || caches.match('./index.html'))
+        )
+    );
+    return;
+  }
+
+  // Scripts, styles and images: use the saved copy if there is one, and refresh it in the background.
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return networkResponse;
-        })
+        .then((networkResponse) => saveCopy(event.request, networkResponse))
         .catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
