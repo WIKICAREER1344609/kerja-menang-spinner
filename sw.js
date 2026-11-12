@@ -1,10 +1,11 @@
-const CACHE_NAME = 'kerja-menang-v4';
+const CACHE_NAME = 'kerja-menang-v5';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './favicon.svg',
   './wikicareer-logo.png',
+  './km-wallpaper.webp',
 ];
 
 self.addEventListener('install', (event) => {
